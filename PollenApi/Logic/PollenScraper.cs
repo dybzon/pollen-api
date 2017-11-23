@@ -9,6 +9,8 @@ namespace PollenApi.Logic
 {
     public class PollenScraper : IPollenScraper
     {
+        public string[] RelevantPollens { get; set; }
+
         public void UpdatePollenInfo()
         {
             
@@ -27,12 +29,12 @@ namespace PollenApi.Logic
 
 
         //Check whether a table row (HtmlNode) contains relevant pollen information
-        private bool IncludesRelevantPollenInfo(HtmlNode trNode, string[] relevantPollens)
+        private bool IncludesRelevantPollenInfo(HtmlNode trNode)
         {
             bool include = false;
             foreach (HtmlNode tdNode in trNode.SelectNodes("./td"))
             {
-                if (relevantPollens.Any(tdNode.InnerHtml.Contains))
+                if (this.RelevantPollens.Any(tdNode.InnerHtml.Contains))
                 {
                     include = true;
                 }
@@ -41,7 +43,7 @@ namespace PollenApi.Logic
         }
 
         //Get pollen info from a table row
-        private PollenInfo GetPollenInfoFromNode(HtmlNode trNode, String city, string[] relevantPollens, int id, String sourceUrl, DateTime observationTime)
+        private PollenInfo GetPollenInfoFromNode(HtmlNode trNode, String city, int id, String sourceUrl, DateTime observationTime)
         {
             PollenInfo pol = new PollenInfo();
             pol.City = city;
@@ -51,7 +53,7 @@ namespace PollenApi.Logic
             //Loop through the cells in the row to get the name and count of the pollen
             foreach (HtmlNode tdNode in trNode.SelectNodes("./td"))
             {
-                if (relevantPollens.Any(tdNode.InnerHtml.Contains))
+                if (this.RelevantPollens.Any(tdNode.InnerHtml.Contains))
                 {
                     pol.PlantName = tdNode.InnerHtml;
                     pol.Id = id;
@@ -68,7 +70,7 @@ namespace PollenApi.Logic
             return pol;
         }
 
-        private List<PollenInfo> GetInnerPollenInfo(String city, HtmlNode bodyNode, string[] relevantPollens, String sourceUrl, DateTime observationTime)
+        private List<PollenInfo> GetInnerPollenInfo(String city, HtmlNode bodyNode, String sourceUrl, DateTime observationTime)
         {
             var scrapedPollens = new List<PollenInfo>();
             var trNodes = bodyNode.SelectNodes("./tr");
@@ -79,10 +81,10 @@ namespace PollenApi.Logic
                 if (trNode.SelectNodes("./td") != null)
                 {
                     //If the row contains relevant pollen information, then we will include it in the list of Pollen objects
-                    if (IncludesRelevantPollenInfo(trNode, relevantPollens))
+                    if (IncludesRelevantPollenInfo(trNode))
                     {
                         //Break the following into a seperate private PollenInfo GetPollenInfoFromNode(HtmlNode trNode){}
-                        scrapedPollens.Add(GetPollenInfoFromNode(trNode, city, relevantPollens, counter, sourceUrl, observationTime));
+                        scrapedPollens.Add(GetPollenInfoFromNode(trNode, city, counter, sourceUrl, observationTime));
                     }
                     counter++;
                 }
@@ -93,7 +95,6 @@ namespace PollenApi.Logic
         private List<PollenInfo> getDmiAllPollens()
         {
             string sourceUrl = "http://www.dmi.dk/vejr/sundhedsvejr/pollen/";
-            string[] relevantPollens = { "Bynke", "El", "Elm", "Græs", "Birk", "Hassel" };
             var scrapedPollens = new List<PollenInfo>();
             var getHtmlWeb = new HtmlWeb();
             var document = getHtmlWeb.Load(sourceUrl);
@@ -106,9 +107,9 @@ namespace PollenApi.Logic
                 if (tableNode.SelectNodes("./tr/th") != null) //Does this part work?
                 {
                     HtmlNode thNode = tableNode.SelectNodes("./tr/th")[0];
-                    if (thNode?.InnerHtml == "København" || thNode?.InnerHtml == "Viborg")
+                    if (thNode?.InnerHtml == "København" || thNode?.InnerHtml == "Viborg") //Move list of relevant cities to class attributes
                     {
-                        scrapedPollens.AddRange(GetInnerPollenInfo(thNode.InnerHtml, tableNode, relevantPollens, sourceUrl, observationTime));
+                        scrapedPollens.AddRange(GetInnerPollenInfo(thNode.InnerHtml, tableNode, sourceUrl, observationTime));
                     }
                 }
             }

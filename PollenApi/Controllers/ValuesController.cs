@@ -8,6 +8,15 @@ using PollenApi.Models;
 
 namespace PollenApi.Controllers
 {
+    /* Work on the routing. We want a structure like this:
+     * api/pollen/{site}/{location}/{plantcode} ... e.g.
+     * api/pollen/dmi/viborg/birk -->Return all values for Dmi/Viborg/Birk
+     * api/pollen/dmi/viborg -->Return all values for Dmi/Viborg
+     * api/pollen/dmi -->Return all values for Dmi
+     * 
+     * 
+     */
+
     [Route("api/[controller]")]
     public class ValuesController : Controller
     {
@@ -34,6 +43,8 @@ namespace PollenApi.Controllers
         public IEnumerable<PollenInfo> GetAllPollen()
         {
             PollenScraper p = new PollenScraper();
+            string[] relevantPollens = { "Bynke", "El", "Elm", "Græs", "Birk", "Hassel" };
+            p.RelevantPollens = relevantPollens;
             return p.GetPollenInfo();
         }
 
